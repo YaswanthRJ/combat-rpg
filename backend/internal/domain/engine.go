@@ -1,85 +1,81 @@
 package domain
 
-import "math"
-
 // Current balance:
 // Player Fast → 0.8
 // Player Heavy → 1.3
 // Player Block → 75% reduction
 // Enemy → 1.0 baseline
-func ResolveAction(state *FightState, action Action) ActionResult {
+
+func ResolveRound(state *FightState, action Action) ActionResult {
 
 	result := ActionResult{}
 
-	//if fight isnt ongoing, return
-	if state.FightStatus != Ongoing {
-		return result
-	}
-
-	state.ActionNumber++
-
-	playerMultiplier := 0.0
-	playerBlocking := false
-
-	switch action {
-	case FastAttack:
-		playerMultiplier = 0.8
-	case HeavyAttack:
-		playerMultiplier = 1.3
-	case Block:
-		playerBlocking = true
-	}
-
-	playerDamage := 0
-
-	if !playerBlocking {
-		//Raw power in the attack
-		rawAttack := (float64(state.Player.Attack) * playerMultiplier)
-		//Damage the attak dealt after encounteruing enemy defense
-		playerDamage = int(math.Floor(rawAttack - float64(state.Enemy.Defense)))
-		if playerDamage < 0 {
-			playerDamage = 0
-		}
-		//Apply the damage
-		state.Enemy.HP = state.Enemy.HP - playerDamage
-		if state.Enemy.HP <= 0 {
-			state.FightStatus = PlayerWon
-		}
-	}
+	// --- Player Phase ---
+	playerDamage, defended := ResolvePlayerAction(state, action)
 	result.PlayerDamageDealt = playerDamage
-	if state.FightStatus == PlayerWon {
-		result.FightEnded = true
-		return result
+
+	if playerDamage > 0 {
+		if applyDamage(&state.Enemy, playerDamage) {
+			state.FightStatus = PlayerWon
+			result.FightEnded = true
+			return result
+		}
 	}
 
-	enemyMultiplier := 1.0
-	enemyDamage := 0
-
-	rawAttack := float64(state.Enemy.Attack) * enemyMultiplier
-	enemyDamage = int(math.Floor(rawAttack - float64(state.Player.Defense)))
-	if enemyDamage < 0 {
-		enemyDamage = 0
-	}
-	if playerBlocking {
-		enemyDamage = enemyDamage / 4
-	}
-
-	state.Player.HP = state.Player.HP - enemyDamage
-	if state.Player.HP <= 0 {
-		state.FightStatus = PlayerLost
-	}
+	// --- Enemy Phase ---
+	enemyDamage := ResolveEnemyAction(state, defended)
 	result.EnemyDamageDealt = enemyDamage
-	if state.FightStatus == PlayerLost {
-		result.FightEnded = true
-		return result
+
+	if enemyDamage > 0 {
+		if applyDamage(&state.Player, enemyDamage) {
+			state.FightStatus = PlayerLost
+			result.FightEnded = true
+		}
 	}
 
 	return result
 }
 
-//TODO:
-// Extract calculateDamage(attack, defense, multiplier)
-// Extract resolvePlayerPhase
-// Extract resolveEnemyPhase
-// Keep ResolveAction small and readable
-// Then write tests
+func ResolvePlayerAction(state *FightState, action Action) (damage int, defended bool) {
+
+	data, ok := ActionPool[action]
+	if !ok {
+		panic("unknown action")
+	}
+
+	if data.Kind == ActionDefend {
+		return 0, true
+	}
+
+	damage = calculateDamage(state.Player.Attack, state.Enemy.Defense, data.Multiplier)
+
+	return damage, false
+}
+
+func ResolveEnemyAction(state *FightState, playerBlocked bool) int {
+
+	damage := calculateDamage(state.Enemy.Attack, state.Player.Defense, 1.0)
+
+	if playerBlocked {
+		damage = applyMultiplier(damage, 0.25)
+	}
+
+	return damage
+}
+
+func applyDamage(creature *Creature, damage int) bool {
+	creature.HP -= damage
+	return creature.HP <= 0
+}
+
+func calculateDamage(attack, defense int, multiplier float64) int {
+	damage := int(float64(attack)*multiplier - float64(defense))
+	if damage < 0 {
+		return 0
+	}
+	return damage
+}
+
+func applyMultiplier(value int, multiplier float64) int {
+	return int(float64(value) * multiplier)
+}

@@ -2,8 +2,37 @@ package domain
 
 type Creature struct {
 	HP      int
-	MaxHp   int
+	MaxHP   int
 	Attack  int
 	Defense int
-	// CritChance float64
+	Actions []Action
+}
+
+type CreatureTemplate struct {
+	MaxHP       int
+	Attack      int
+	Defense     int
+	Actions     []Action
+	Description string
+}
+
+var CreaturePool = map[string]CreatureTemplate{
+	"Bandit":  {MaxHP: 20, Attack: 15, Defense: 10, Actions: []Action{FastAttack, HeavyAttack}, Description: "A common bandit"},
+	"Soldier": {MaxHP: 30, Attack: 20, Defense: 25, Actions: []Action{FastAttack, HeavyAttack, Block}, Description: "A trained and well equipped soldier"},
+}
+
+func GenerateCreature(Name string) Creature {
+	t, ok := CreaturePool[Name]
+
+	if !ok {
+		panic("Creature Not Found!" + Name)
+	}
+	return Creature{
+		HP:      t.MaxHP,
+		MaxHP:   t.MaxHP,
+		Attack:  t.Attack,
+		Defense: t.Defense,
+		Actions: append([]Action{}, t.Actions...),
+	}
+
 }
