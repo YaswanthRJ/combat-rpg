@@ -1,5 +1,7 @@
 package domain
 
+import "fmt"
+
 type Creature struct {
 	HP      int
 	MaxHP   int
@@ -21,11 +23,11 @@ var CreaturePool = map[string]CreatureTemplate{
 	"Soldier": {MaxHP: 30, Attack: 20, Defense: 25, Actions: []Action{FastAttack, HeavyAttack, Block}, Description: "A trained and well equipped soldier"},
 }
 
-func GenerateCreature(Name string) Creature {
+func GenerateCreature(Name string) (Creature, error) {
 	t, ok := CreaturePool[Name]
 
 	if !ok {
-		panic("Creature Not Found!" + Name)
+		return Creature{}, fmt.Errorf("creature not found: %s", Name)
 	}
 	return Creature{
 		HP:      t.MaxHP,
@@ -33,6 +35,6 @@ func GenerateCreature(Name string) Creature {
 		Attack:  t.Attack,
 		Defense: t.Defense,
 		Actions: append([]Action{}, t.Actions...),
-	}
+	}, nil
 
 }

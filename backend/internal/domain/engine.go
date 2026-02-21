@@ -1,24 +1,33 @@
 package domain
 
+import (
+	"errors"
+)
+
 // Current balance:
 // Player Fast → 0.8
 // Player Heavy → 1.3
 // Player Block → 75% reduction
 // Enemy → 1.0 baseline
 
-func ResolveRound(state *FightState, action Action) ActionResult {
+func ResolveRound(state *FightState, action Action) (ActionResult, error) {
 
 	result := ActionResult{}
 
 	// --- Player Phase ---
-	playerDamage, defended := ResolvePlayerAction(state, action)
+	playerDamage, defended, err := ResolvePlayerAction(state, action)
+
+	if err != nil {
+		return ActionResult{}, err
+	}
+
 	result.PlayerDamageDealt = playerDamage
 
 	if playerDamage > 0 {
 		if applyDamage(&state.Enemy, playerDamage) {
 			state.FightStatus = PlayerWon
 			result.FightEnded = true
-			return result
+			return result, nil
 		}
 	}
 
@@ -33,23 +42,23 @@ func ResolveRound(state *FightState, action Action) ActionResult {
 		}
 	}
 
-	return result
+	return result, nil
 }
 
-func ResolvePlayerAction(state *FightState, action Action) (damage int, defended bool) {
+func ResolvePlayerAction(state *FightState, action Action) (damage int, defended bool, err error) {
 
 	data, ok := ActionPool[action]
 	if !ok {
-		panic("unknown action")
+		return 0, false, errors.New("Coudnt fetch Action")
 	}
 
 	if data.Kind == ActionDefend {
-		return 0, true
+		return 0, true, nil
 	}
 
 	damage = calculateDamage(state.Player.Attack, state.Enemy.Defense, data.Multiplier)
 
-	return damage, false
+	return damage, false, nil
 }
 
 func ResolveEnemyAction(state *FightState, playerBlocked bool) int {
