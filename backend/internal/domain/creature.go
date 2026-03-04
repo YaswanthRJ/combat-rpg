@@ -11,6 +11,7 @@ type Creature struct {
 }
 
 type CreatureTemplate struct {
+	Name        string
 	MaxHP       int
 	Attack      int
 	Defense     int

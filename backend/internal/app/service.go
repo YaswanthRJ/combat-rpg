@@ -38,27 +38,33 @@ func (s *CampaignService) StartCampaign(playerCreatureName string) (string, erro
 	return campaignID, nil
 }
 
-func (s *CampaignService) StartFight(campaignID string, enemyCreatureName string) (string, error) {
+func (s *CampaignService) StartFight(campaignID string, enemyCreatureName string) (*domain.FightState, domain.CreatureTemplate, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 
 	currentCampaign, err := s.getCampaignLocked(campaignID)
 	if err != nil {
-		return "", err
+		return nil, domain.CreatureTemplate{}, err
 	}
 
 	if currentCampaign.ActiveFightID != "" {
 		activeFight, exists := currentCampaign.Fights[currentCampaign.ActiveFightID]
 		if exists && activeFight.FightStatus == domain.Ongoing {
-			return "", errors.New("active fight already in progress")
+			return nil, domain.CreatureTemplate{}, errors.New("active fight already in progress")
 		}
+	}
+
+	// Validate enemy template here (NOT in handler)
+	template, ok := domain.CreaturePool[enemyCreatureName]
+	if !ok {
+		return nil, domain.CreatureTemplate{}, errors.New("unknown enemy type")
 	}
 
 	fightID := uuid.NewString()
 	enemyCreature, err := domain.GenerateCreature(enemyCreatureName)
 
 	if err != nil {
-		return "", err
+		return nil, domain.CreatureTemplate{}, err
 	}
 
 	fight := &domain.FightState{
@@ -70,34 +76,38 @@ func (s *CampaignService) StartFight(campaignID string, enemyCreatureName string
 	currentCampaign.Fights[fightID] = fight
 	currentCampaign.ActiveFightID = fightID
 
-	return fightID, nil
+	return fight, template, nil
 
 }
 
-func (s *CampaignService) PerformAction(campaignID string, action domain.Action) (domain.ActionResult, error) {
+func (s *CampaignService) PerformAction(
+	campaignID string,
+	action domain.Action,
+) (domain.ActionResult, *domain.FightState, error) {
+
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 
 	currentCampaign, err := s.getCampaignLocked(campaignID)
 	if err != nil {
-		return domain.ActionResult{}, err
+		return domain.ActionResult{}, nil, err
 	}
 
 	fight, err := s.getActiveFightLocked(currentCampaign)
 	if err != nil {
-		return domain.ActionResult{}, err
+		return domain.ActionResult{}, nil, err
 	}
 
 	result, err := domain.ResolveRound(fight, action)
 	if err != nil {
-		return domain.ActionResult{}, err
+		return domain.ActionResult{}, nil, err
 	}
 
 	if fight.FightStatus != domain.Ongoing {
 		currentCampaign.Player = fight.Player
 	}
 
-	return result, nil
+	return result, fight, nil
 }
 
 func (s *CampaignService) getCampaignLocked(id string) (*Campaign, error) {

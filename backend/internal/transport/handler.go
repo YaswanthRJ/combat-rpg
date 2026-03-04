@@ -2,6 +2,7 @@ package transport
 
 import (
 	"combat-sim/internal/app"
+	"combat-sim/internal/domain"
 	"encoding/json"
 	"net/http"
 )
@@ -36,4 +37,32 @@ func (h *Handler) StartCampaign(w http.ResponseWriter, r *http.Request) {
 		"campaignID": id,
 	})
 
+}
+
+// POST /fight/start
+func (h *Handler) StartFight(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		CampaignId string `json:"campaignId"`
+		Enemy      string `json:"enemy"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", 400)
+		return
+	}
+
+	template, ok := domain.CreaturePool[req.Enemy]
+	if !ok {
+		http.Error(w, "unknown enemy type", 400)
+		return
+	}
+
+	state, template, err := h.service.StartFight(req.CampaignId, req.Enemy)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+
+	view := ToFightView(state, template)
+	json.NewEncoder(w).Encode(view)
 }

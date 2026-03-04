@@ -27,7 +27,7 @@ func TestStartFightWithoutCampaignFails(t *testing.T) {
 	store := NewCampaignStore()
 	service := NewCampaignService(store)
 
-	_, err := service.StartFight("fake", "Bandit")
+	_, _, err := service.StartFight("fake", "Bandit")
 	if err == nil {
 		t.Errorf("expected error")
 	}
@@ -39,12 +39,12 @@ func TestCannotStartFightIfActiveExists(t *testing.T) {
 
 	id, _ := service.StartCampaign("Bandit")
 
-	_, err := service.StartFight(id, "Bandit")
+	_, _, err := service.StartFight(id, "Bandit")
 	if err != nil {
 		t.Fatalf("unexpected error")
 	}
 
-	_, err = service.StartFight(id, "Bandit")
+	_, _, err = service.StartFight(id, "Bandit")
 	if err == nil {
 		t.Errorf("expected error when fight already active")
 	}
@@ -56,7 +56,7 @@ func TestPerformActionWithoutFightFails(t *testing.T) {
 
 	id, _ := service.StartCampaign("Bandit")
 
-	_, err := service.PerformAction(id, domain.HeavyAttack)
+	_, _, err := service.PerformAction(id, domain.HeavyAttack)
 	if err == nil {
 		t.Errorf("expected error")
 	}
@@ -72,7 +72,7 @@ func TestPlayerHPPersistsAfterFight(t *testing.T) {
 
 	// run rounds until fight ends
 	for {
-		result, _ := service.PerformAction(id, domain.HeavyAttack)
+		result, _, _ := service.PerformAction(id, domain.HeavyAttack)
 		if result.FightEnded {
 			break
 		}
