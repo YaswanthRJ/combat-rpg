@@ -7,7 +7,7 @@ import (
 
 func TestStartCampaignCreatesCampaign(t *testing.T) {
 	store := NewCampaignStore()
-	service := NewFightService(store)
+	service := NewCampaignService(store)
 
 	id, err := service.StartCampaign("Bandit")
 	if err != nil {
@@ -25,7 +25,7 @@ func TestStartCampaignCreatesCampaign(t *testing.T) {
 
 func TestStartFightWithoutCampaignFails(t *testing.T) {
 	store := NewCampaignStore()
-	service := NewFightService(store)
+	service := NewCampaignService(store)
 
 	_, err := service.StartFight("fake", "Bandit")
 	if err == nil {
@@ -35,7 +35,7 @@ func TestStartFightWithoutCampaignFails(t *testing.T) {
 
 func TestCannotStartFightIfActiveExists(t *testing.T) {
 	store := NewCampaignStore()
-	service := NewFightService(store)
+	service := NewCampaignService(store)
 
 	id, _ := service.StartCampaign("Bandit")
 
@@ -52,7 +52,7 @@ func TestCannotStartFightIfActiveExists(t *testing.T) {
 
 func TestPerformActionWithoutFightFails(t *testing.T) {
 	store := NewCampaignStore()
-	service := NewFightService(store)
+	service := NewCampaignService(store)
 
 	id, _ := service.StartCampaign("Bandit")
 
@@ -64,7 +64,7 @@ func TestPerformActionWithoutFightFails(t *testing.T) {
 
 func TestPlayerHPPersistsAfterFight(t *testing.T) {
 	store := NewCampaignStore()
-	service := NewFightService(store)
+	service := NewCampaignService(store)
 
 	id, _ := service.StartCampaign("Soldier")
 

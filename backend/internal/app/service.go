@@ -7,15 +7,15 @@ import (
 	"github.com/google/uuid"
 )
 
-type FightService struct {
+type CampaignService struct {
 	store *CampaignStore
 }
 
-func NewFightService(store *CampaignStore) *FightService {
-	return &FightService{store: store}
+func NewCampaignService(store *CampaignStore) *CampaignService {
+	return &CampaignService{store: store}
 }
 
-func (s *FightService) StartCampaign(playerCreatureName string) (string, error) {
+func (s *CampaignService) StartCampaign(playerCreatureName string) (string, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 
@@ -38,7 +38,7 @@ func (s *FightService) StartCampaign(playerCreatureName string) (string, error) 
 	return campaignID, nil
 }
 
-func (s *FightService) StartFight(campaignID string, enemyCreatureName string) (string, error) {
+func (s *CampaignService) StartFight(campaignID string, enemyCreatureName string) (string, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 
@@ -74,7 +74,7 @@ func (s *FightService) StartFight(campaignID string, enemyCreatureName string) (
 
 }
 
-func (s *FightService) PerformAction(campaignID string, action domain.Action) (domain.ActionResult, error) {
+func (s *CampaignService) PerformAction(campaignID string, action domain.Action) (domain.ActionResult, error) {
 	s.store.mu.Lock()
 	defer s.store.mu.Unlock()
 
@@ -100,7 +100,7 @@ func (s *FightService) PerformAction(campaignID string, action domain.Action) (d
 	return result, nil
 }
 
-func (s *FightService) getCampaignLocked(id string) (*Campaign, error) {
+func (s *CampaignService) getCampaignLocked(id string) (*Campaign, error) {
 	campaign, ok := s.store.campaigns[id]
 	if !ok {
 		return nil, errors.New("campaign not found")
@@ -108,7 +108,7 @@ func (s *FightService) getCampaignLocked(id string) (*Campaign, error) {
 	return campaign, nil
 }
 
-func (s *FightService) getActiveFightLocked(c *Campaign) (*domain.FightState, error) {
+func (s *CampaignService) getActiveFightLocked(c *Campaign) (*domain.FightState, error) {
 
 	fightID := c.ActiveFightID
 	if fightID == "" {
