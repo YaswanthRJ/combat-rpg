@@ -14,6 +14,8 @@ func ResolveRound(state *FightState, action Action) (ActionResult, error) {
 
 	result := ActionResult{}
 
+	state.ActionNumber++ // turn counter
+	result.ActionNumber = state.ActionNumber
 	// --- Player Phase ---
 	playerDamage, defended, err := ResolvePlayerAction(state, action)
 

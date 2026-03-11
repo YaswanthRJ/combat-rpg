@@ -54,7 +54,6 @@ func (s *CampaignService) StartFight(campaignID string, enemyCreatureName string
 		}
 	}
 
-	// Validate enemy template here (NOT in handler)
 	template, ok := domain.CreaturePool[enemyCreatureName]
 	if !ok {
 		return nil, domain.CreatureTemplate{}, errors.New("unknown enemy type")
